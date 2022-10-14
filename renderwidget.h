@@ -22,10 +22,10 @@ protected:
 
 private:
     QElapsedTimer *m_timer;
-    QOpenGLBuffer *m_vbo, *m_cbo, *m_ebo, *m_uvbo;
+    QOpenGLBuffer *m_vbo;
     QOpenGLVertexArrayObject *m_vao;
     QOpenGLShaderProgram *m_shader;
-    QOpenGLTexture *m_texture;
+    QOpenGLTexture *m_texture_face, *m_texture_box;
     QVector3D camera_pos;
 };
 
