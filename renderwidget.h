@@ -3,6 +3,7 @@
 
 #include "camera.h"
 #include "skybox.h"
+#include "static.h"
 
 #include <QElapsedTimer>
 #include <QOpenGLWidget>
@@ -35,7 +36,8 @@ protected:
 private:
     QElapsedTimer *m_timer;
     QOpenGLShaderProgram *m_shader;
-    SkyBox* m_skybox;
+    SkyBox *m_skybox;
+    Static *m_static;
 
     Camera cam;
     int mouse_x, mouse_y;

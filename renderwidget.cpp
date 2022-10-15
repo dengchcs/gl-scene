@@ -4,6 +4,7 @@ RenderWidget::RenderWidget(QWidget *parent)
     : QOpenGLWidget(parent)
     , m_shader(nullptr)
     , m_skybox(nullptr)
+    , m_static(nullptr)
 {
     this->setFocusPolicy(Qt::StrongFocus);
     projection_type = ProjectionType::Perspective;
@@ -18,22 +19,22 @@ RenderWidget::~RenderWidget() {
 void RenderWidget::keyPressEvent(QKeyEvent *event) {
     switch(event->key()) {
     case Qt::Key_A:
-        cam.translate_left(0.2);
+        cam.translate_left(0.01);
         break;
     case Qt::Key_D:
-        cam.translate_left(-0.2);
+        cam.translate_left(-0.01);
         break;
     case Qt::Key_W:
-        cam.translate_up(0.2);
+        cam.translate_up(0.01);
         break;
     case Qt::Key_S:
-        cam.translate_up(-0.2);
+        cam.translate_up(-0.01);
         break;
     case Qt::Key_F:
-        cam.translate_forward(0.2);
+        cam.translate_forward(0.01);
         break;
     case Qt::Key_B:
-        cam.translate_forward(-0.2);
+        cam.translate_forward(-0.01);
         break;
     case Qt::Key_Z:
         cam.zoom_near(0.1);
@@ -59,7 +60,10 @@ void RenderWidget::mouseMoveEvent(QMouseEvent *event) {
     const int xnew = event->pos().x();
     const int ynew = event->pos().y();
     constexpr float degree = 3;
-    if (std::abs(mouse_x - xnew) >= 3) {
+
+    const auto xdiff = std::abs(mouse_x - xnew), ydiff = std::abs(mouse_y - ynew);
+    if (std::abs(xdiff - ydiff) <= 3) return;
+    if (xdiff > ydiff && xdiff >= 3) {
         if (xnew > mouse_x) {
             cam.rotate_left(degree);
         } else {
@@ -68,7 +72,7 @@ void RenderWidget::mouseMoveEvent(QMouseEvent *event) {
         mouse_x = xnew;
     }
 
-    if (std::abs(mouse_y - ynew) >= 3) {
+    if (ydiff > xdiff && ydiff >= 3) {
         if (ynew > mouse_y) {
             cam.rotate_up(-degree);
         } else {
@@ -92,12 +96,15 @@ void RenderWidget::initializeGL() {
     m_shader = new QOpenGLShaderProgram;
 
     m_skybox = new SkyBox(this, m_shader);
+    m_static = new Static(this, m_shader);
 }
 
 void RenderWidget::paintGL() {
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_skybox->draw(cam);
+    m_static->draw(cam);
 
     update();
 }

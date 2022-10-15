@@ -10,32 +10,32 @@ SkyBox::SkyBox(QOpenGLFunctions *funcs, QOpenGLShaderProgram * program) {
 
 void SkyBox::init_buffer() {
     const GLfloat vertices[] = {
-        -1, -1, -1, 0, 0,
+        -1, -1, -1, 0, 0,   // 前
         +1, -1, -1, 1, 0,
         +1, +1, -1, 1, 1,
         -1, +1, -1, 0, 1,
 
-        +1, -1, +1, 0, 0,
+        +1, -1, +1, 0, 0,   // 后
         -1, -1, +1, 1, 0,
         -1, +1, +1, 1, 1,
         +1, +1, +1, 0, 1,
 
-        -1, -1, +1, 0, 0,
+        -1, -1, +1, 0, 0,   // 左
         -1, -1, -1, 1, 0,
         -1, +1, -1, 1, 1,
         -1, +1, +1, 0, 1,
 
-        +1, -1, -1, 0, 0,
+        +1, -1, -1, 0, 0,   // 右
         +1, -1, +1, 1, 0,
         +1, +1, +1, 1, 1,
         +1, +1, -1, 0, 1,
 
-        -1, +1, -1, 0, 0,
+        -1, +1, -1, 0, 0,   // 上
         +1, +1, -1, 1, 0,
         +1, +1, +1, 1, 1,
         -1, +1, +1, 0, 1,
 
-        -1, -1, +1, 0, 0,
+        -1, -1, +1, 0, 0,   // 下
         +1, -1, +1, 1, 0,
         +1, -1, -1, 1, 1,
         -1, -1, -1, 0, 1,
@@ -96,7 +96,7 @@ void SkyBox::draw(const Camera& camera) {
     }
 
     QMatrix4x4 model;
-    model.translate(camera.get_eye());
+    // model.translate(camera.get_eye());
     QMatrix4x4 view;
     view.lookAt(camera.get_eye(), camera.get_center(), camera.get_up());
     QMatrix4x4 projection;
