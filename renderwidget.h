@@ -2,6 +2,8 @@
 #define RENDERWIDGET_H
 
 #include "camera.h"
+#include "skybox.h"
+
 #include <QElapsedTimer>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
@@ -32,12 +34,10 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
 private:
     QElapsedTimer *m_timer;
-    QOpenGLBuffer *m_vbo;
-    QOpenGLVertexArrayObject *m_vao;
     QOpenGLShaderProgram *m_shader;
-    QOpenGLTexture *m_texture_face, *m_texture_box;
+    SkyBox* m_skybox;
 
-    camera cam;
+    Camera cam;
     int mouse_x, mouse_y;
     ProjectionType projection_type;
 };

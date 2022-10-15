@@ -4,7 +4,7 @@
 #include <QMatrix4x4>
 #include <QVector3D>
 
-class camera
+class Camera
 {
     QVector3D eye, up, center;
     float dist_r, zoom;
@@ -14,10 +14,20 @@ class camera
         return mat;
     }
 public:
-    camera();
-    camera(const QVector3D& eye, const QVector3D& up, const QVector3D& center, float dist = 1.0);
+    Camera();
+    Camera(const QVector3D& eye, const QVector3D& up, const QVector3D& center, float dist = 1.0);
 public:
-    QMatrix4x4 camera_mat();
+    QVector3D get_eye() const {
+        return eye;
+    }
+    QVector3D get_center() const {
+        return center;
+    }
+    QVector3D get_up() const {
+        return up;
+    }
+public:
+    QMatrix4x4 camera_mat() const;
     void translate_up(float dist);
     void translate_left(float dist);
     void translate_forward(float dist);

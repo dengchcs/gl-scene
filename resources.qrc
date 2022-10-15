@@ -1,10 +1,16 @@
 <RCC>
-    <qresource prefix="/shaders">
-        <file>vert.shader</file>
-        <file>frag.shader</file>
-    </qresource>
-    <qresource prefix="/images">
-        <file>awesomeface.png</file>
-        <file>container.jpg</file>
+    <qresource prefix="/">
+        <file>images/awesomeface.png</file>
+        <file>images/container.jpg</file>
+        <file>images/front.jpg</file>
+        <file>images/back.jpg</file>
+        <file>images/top.jpg</file>
+        <file>images/bottom.jpg</file>
+        <file>images/left.jpg</file>
+        <file>images/right.jpg</file>
+        <file>shaders/vert.shader</file>
+        <file>shaders/frag.shader</file>
+        <file>shaders/skybox.vert.shader</file>
+        <file>shaders/skybox.frag.shader</file>
     </qresource>
 </RCC>

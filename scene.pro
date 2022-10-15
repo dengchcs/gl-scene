@@ -12,12 +12,14 @@ SOURCES += \
     camera.cpp \
     main.cpp \
     mainwidget.cpp \
-    renderwidget.cpp
+    renderwidget.cpp \
+    skybox.cpp
 
 HEADERS += \
     camera.h \
     mainwidget.h \
-    renderwidget.h
+    renderwidget.h \
+    skybox.h
 
 FORMS += \
     form.ui
