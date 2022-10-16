@@ -1,12 +1,52 @@
 #include "cube.h"
 
-Cube::Cube(QOpenGLFunctions *funcs, QOpenGLShaderProgram *program)
+Cube::Cube(QOpenGLFunctions *funcs, QOpenGLShaderProgram *program, const QVector3D& center, const float len)
+    : m_program(program)
+    , m_funcs(funcs)
+    , m_center(center)
+    , m_len(len)
 {
-    m_funcs = funcs;
-    m_program = program;
+    init_vertices();
     init_buffer();
     init_shaders();
     init_textures();
+}
+
+void Cube::init_vertices() {
+    const float xxmin = xmin(), xxmax = xmax();
+    const float yymin = ymin(), yymax = ymax();
+    const float zzmin = zmin(), zzmax = zmax();
+    m_vertices = {
+        xxmin, yymin, zzmin, 0, 0, // 0
+        xxmin, yymin, zzmax, 1, 0, // 1
+        xxmax, yymin, zzmax, 1, 1, // 2
+        xxmax, yymin, zzmin, 0, 1, // 3
+
+        xxmin, yymax, zzmin, 0, 0, // 4
+        xxmin, yymax, zzmax, 1, 0, // 5
+        xxmax, yymax, zzmax, 1, 1, // 6
+        xxmax, yymax, zzmin, 0, 1, // 7
+
+        xxmin, yymin, zzmin, 0, 0, // 0
+        xxmin, yymin, zzmax, 1, 0, // 1
+        xxmin, yymax, zzmax, 1, 1, // 5
+        xxmin, yymax, zzmin, 0, 1, // 4
+
+        xxmax, yymin, zzmax, 0, 0, // 2
+        xxmax, yymin, zzmin, 1, 0, // 3
+        xxmax, yymax, zzmin, 1, 1, // 7
+        xxmax, yymax, zzmax, 0, 1, // 6
+
+        xxmin, yymin, zzmax, 0, 0, // 1
+        xxmax, yymin, zzmax, 1, 0, // 2
+        xxmax, yymax, zzmax, 1, 1, // 6
+        xxmin, yymax, zzmax, 0, 1, // 5
+
+        xxmax, yymin, zzmin, 0, 0, // 3
+        xxmin, yymin, zzmin, 1, 0, // 0
+        xxmin, yymax, zzmin, 1, 1, // 4
+        xxmax, yymax, zzmin, 0, 1, // 7
+    };
 }
 
 void Cube::init_buffer() {
@@ -19,39 +59,8 @@ void Cube::init_buffer() {
 
     m_vbo->create();
     m_vbo->bind();
-    constexpr GLfloat  xmax = -0.8, xmin = -1.0, ymax = -0.8, ymin = -1.0, zmax = 1.0, zmin = 0.8;
-    const GLfloat vertices[] = {
-        xmin, ymin, zmin, 1, 1, // 0
-        xmin, ymin, zmax, 0, 1, // 1
-        xmax, ymin, zmax, 0, 0, // 2
-        xmax, ymin, zmin, 1, 0, // 3
 
-        xmin, ymin, zmin, 1, 1, // 0
-        xmin, ymin, zmax, 0, 1, // 1
-        xmin, ymax, zmax, 0, 0, // 5
-        xmin, ymax, zmin, 1, 0, // 4
-
-        xmin, ymin, zmax, 1, 1, // 1
-        xmax, ymin, zmax, 0, 1, // 2
-        xmax, ymax, zmax, 0, 0, // 6
-        xmax, ymax, zmax, 1, 0, // 5
-
-        xmax, ymin, zmax, 1, 1, // 2
-        xmax, ymin, zmin, 0, 1, // 3
-        xmax, ymax, zmin, 0, 0, // 7
-        xmax, ymax, zmax, 1, 0, // 6
-
-        xmax, ymin, zmin, 1, 1, // 3
-        xmin, ymin, zmin, 0, 1, // 0
-        xmin, ymax, zmin, 0, 0, // 4
-        xmax, ymax, zmin, 1, 0, // 7
-
-        xmin, ymax, zmin, 1, 1, // 4
-        xmin, ymax, zmax, 0, 1, // 5
-        xmax, ymax, zmax, 0, 0, // 6
-        xmax, ymax, zmin, 1, 0, // 7
-    };
-    m_vbo->allocate(vertices, 5 * 4 * 6 * sizeof(GLfloat));
+    m_vbo->allocate(m_vertices.data(), 5 * 4 * 6 * sizeof(GLfloat));
     m_funcs->glEnableVertexAttribArray(0);
     m_funcs->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
     m_funcs->glEnableVertexAttribArray(1);
@@ -73,8 +82,8 @@ void Cube::init_shaders() {
 }
 
 void Cube::init_textures() {
-    m_texture_face = new QOpenGLTexture(QImage(":/images/awesomeface.jpg"));
-    m_texture_box = new QOpenGLTexture(QImage(":/images/container.jpg"));
+    m_texture_face = new QOpenGLTexture(QImage(":/images/awesomeface.jpg").mirrored());
+    m_texture_box = new QOpenGLTexture(QImage(":/images/container.jpg").mirrored());
 }
 
 void Cube::draw(const QMatrix4x4& mvp) {

@@ -34,10 +34,15 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 private:
-    QElapsedTimer *m_timer;
-    QOpenGLShaderProgram *m_shader;
-    SkyBox *m_skybox;
+    void move();
+private:
+    QElapsedTimer *m_timer{nullptr};
+    QOpenGLShaderProgram *m_shader{nullptr};
+    SkyBox *m_skybox{nullptr};
     std::vector<Cube*> m_static_cubes;
+    Cube* m_moving_cube{nullptr};
+    QVector3D m_direction{1, 0, 0};
+    QVector3D m_diff{0, 0, 0};
 
     Camera cam;
     int mouse_x, mouse_y;

@@ -4,6 +4,7 @@ uniform mat4 MVP;
 out vec3 texCoord;
 
 void main() {
-    gl_Position = MVP * vec4(position, 1.0f);
+    vec4 pos = MVP * vec4(position, 1.0f);
+    gl_Position = pos.xyww;
     texCoord = position;
 }

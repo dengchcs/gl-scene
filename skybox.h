@@ -21,12 +21,12 @@ private:
 public:
     void draw(const QMatrix4x4& mvp);
 private:
-    QOpenGLBuffer *m_vbo;
-    QOpenGLVertexArrayObject *m_vao;
-    QOpenGLShaderProgram *m_program;
-    QOpenGLFunctions *m_funcs;
-    QOpenGLShader *m_shader_vert, *m_shader_frag;
-    QOpenGLTexture* m_texture;
+    QOpenGLBuffer *m_vbo{nullptr};
+    QOpenGLVertexArrayObject *m_vao{nullptr};
+    QOpenGLShaderProgram *m_program{nullptr};
+    QOpenGLFunctions *m_funcs{nullptr};
+    QOpenGLShader *m_shader_vert{nullptr}, *m_shader_frag{nullptr};
+    QOpenGLTexture* m_texture{nullptr};
 };
 
 #endif // SKYBOX_H

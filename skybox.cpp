@@ -102,7 +102,8 @@ void SkyBox::init_textures() {
 }
 
 void SkyBox::draw(const QMatrix4x4& mvp) {
-    m_funcs->glDisable(GL_DEPTH_TEST);
+    // m_funcs->glDisable(GL_DEPTH_TEST);
+    m_funcs->glDepthFunc(GL_LEQUAL);
     m_program->removeAllShaders();
     m_program->addShader(m_shader_vert);
     m_program->addShader(m_shader_frag);
@@ -122,4 +123,5 @@ void SkyBox::draw(const QMatrix4x4& mvp) {
     m_texture->release();
     m_program->release();
     m_vao->release();
+    m_funcs->glDepthFunc(GL_LESS);
 }

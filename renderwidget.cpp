@@ -96,10 +96,9 @@ void RenderWidget::initializeGL() {
     m_shader = new QOpenGLShaderProgram;
 
     m_skybox = new SkyBox(this, m_shader);
-    constexpr int ncube = 4;
-    for (int i = 0; i < ncube; i++) {
-        m_static_cubes.push_back(new Cube(this, m_shader));
-    }
+    m_static_cubes.push_back(new Cube(this, m_shader, {-0.9, -0.9, -0.9}, 0.2));
+    m_static_cubes.push_back(new Cube(this, m_shader, {+0.9, -0.9, -0.9}, 0.2));
+    m_moving_cube = new Cube(this, m_shader, {0.0, -0.95, -0.9}, 0.1);
 }
 
 void RenderWidget::paintGL() {
@@ -109,20 +108,40 @@ void RenderWidget::paintGL() {
     QMatrix4x4 model, view, projection;
     model.translate(cam.get_eye());
     view = cam.camera_mat();
-    projection.perspective(75, 1.0, 0.1, 10);
+    projection.perspective(45, 1.0, 0.1, 10);
 
     m_skybox->draw(projection * view * model);
 
-    const float trans[] = {-1, -0.5, 0, 0.5};
     for (std::size_t i = 0; i < m_static_cubes.size(); i++) {
-        QMatrix4x4 cube_model(model);
-        cube_model.translate(trans[i], 0, trans[i]);
-        m_static_cubes[i]->draw(projection * view * cube_model);
+        m_static_cubes[i]->draw(projection * view * model);
     }
+
+    move();
+    QMatrix4x4 mv_model;
+    // mv_model.rotate(m_timer->elapsed() / 10.0, {1, 0, 0});
+    mv_model.translate(cam.get_eye());
+    mv_model.translate(m_diff);
+
+    m_moving_cube->draw(projection * view * mv_model);
 
     update();
 }
 
 void RenderWidget::resizeGL(int w, int h) {
    glViewport(0, 0, w, h);
+}
+
+void RenderWidget::move() {
+    const float xmin = m_static_cubes[0]->xmax(), xmax = m_static_cubes[1]->xmin();
+    const auto current = m_moving_cube->get_center() + m_diff;
+    if (current.x() - m_moving_cube->get_len() / 2.0 <= xmin) {
+        m_direction = {1, 0, 0};
+    }
+    if (current.x() + m_moving_cube->get_len() / 2.0 >= xmax) {
+        m_direction = {-1, 0, 0};
+    }
+    const float velocity = (std::abs(current.x()) + 0.02) * 0.05;
+
+    const auto step = m_direction * velocity;
+    m_diff += step;
 }
