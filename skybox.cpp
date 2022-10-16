@@ -1,5 +1,4 @@
 #include "skybox.h"
-#include "camera.h"
 SkyBox::SkyBox(QOpenGLFunctions *funcs, QOpenGLShaderProgram * program) {
     m_funcs = funcs;
     m_program = program;
@@ -10,35 +9,35 @@ SkyBox::SkyBox(QOpenGLFunctions *funcs, QOpenGLShaderProgram * program) {
 
 void SkyBox::init_buffer() {
     const GLfloat vertices[] = {
-        -1, -1, -1, 0, 0,   // 前
-        +1, -1, -1, 1, 0,
-        +1, +1, -1, 1, 1,
-        -1, +1, -1, 0, 1,
+        -1, -1, -1,   // 前
+        +1, -1, -1,
+        +1, +1, -1,
+        -1, +1, -1,
 
-        +1, -1, +1, 0, 0,   // 后
-        -1, -1, +1, 1, 0,
-        -1, +1, +1, 1, 1,
-        +1, +1, +1, 0, 1,
+        +1, -1, +1,   // 后
+        -1, -1, +1,
+        -1, +1, +1,
+        +1, +1, +1,
 
-        -1, -1, +1, 0, 0,   // 左
-        -1, -1, -1, 1, 0,
-        -1, +1, -1, 1, 1,
-        -1, +1, +1, 0, 1,
+        -1, -1, +1,  // 左
+        -1, -1, -1,
+        -1, +1, -1,
+        -1, +1, +1,
 
-        +1, -1, -1, 0, 0,   // 右
-        +1, -1, +1, 1, 0,
-        +1, +1, +1, 1, 1,
-        +1, +1, -1, 0, 1,
+        +1, -1, -1,   // 右
+        +1, -1, +1,
+        +1, +1, +1,
+        +1, +1, -1,
 
-        -1, +1, -1, 0, 0,   // 上
-        +1, +1, -1, 1, 0,
-        +1, +1, +1, 1, 1,
-        -1, +1, +1, 0, 1,
+        -1, +1, -1,   // 上
+        +1, +1, -1,
+        +1, +1, +1,
+        -1, +1, +1,
 
-        -1, -1, +1, 0, 0,   // 下
-        +1, -1, +1, 1, 0,
-        +1, -1, -1, 1, 1,
-        -1, -1, -1, 0, 1,
+        -1, -1, +1,   // 下
+        +1, -1, +1,
+        +1, -1, -1,
+        -1, -1, -1,
     };
     m_vao = new QOpenGLVertexArrayObject;
     m_vbo = new QOpenGLBuffer(QOpenGLBuffer::Type::VertexBuffer);
@@ -47,11 +46,9 @@ void SkyBox::init_buffer() {
 
     m_vbo->create();
     m_vbo->bind();
-    m_vbo->allocate(vertices, 5 * 4 * 6 * sizeof(GLfloat));
+    m_vbo->allocate(vertices, 3 * 4 * 6 * sizeof(GLfloat));
     m_funcs->glEnableVertexAttribArray(0);
-    m_funcs->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
-    m_funcs->glEnableVertexAttribArray(1);
-    m_funcs->glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+    m_funcs->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
     m_vbo->release();
 
     m_vao->release();
@@ -69,20 +66,42 @@ void SkyBox::init_shaders() {
 }
 
 void SkyBox::init_textures() {
-    const std::vector<QString> images = {"front.jpg", "back.jpg", "left.jpg", "right.jpg", "top.jpg", "bottom.jpg"};
+    // 前:posz, 后:negz, 左:negx, 右:posx, 上:posy, 下:negy
+    std::vector<QString> paths = {"front.jpg", "back.jpg", "left.jpg", "right.jpg", "top.jpg", "bottom.jpg"};
     const QString prefix = ":/images/";
-    for (std::size_t i = 0; i < images.size(); i++) {
-        auto str = images[i];
+    for (auto&& str : paths) {
         str.prepend(prefix);
-        m_textures.push_back(new QOpenGLTexture(QImage(str).mirrored()));
     }
-    for (auto texture : m_textures) {
-        texture->setWrapMode(QOpenGLTexture::DirectionS, QOpenGLTexture::ClampToEdge);
-        texture->setWrapMode(QOpenGLTexture::DirectionT, QOpenGLTexture::ClampToEdge);
+    std::vector<QImage> images;
+    for (auto&& str : paths) {
+        images.push_back(QImage(str).convertToFormat(QImage::Format_RGB888));
     }
+
+    m_texture = new QOpenGLTexture(QOpenGLTexture::TargetCubeMap);
+    m_texture->create();
+    m_texture->setSize(images[0].width(), images[0].height(), images[0].depth());
+    m_texture->setFormat(QOpenGLTexture::RGBFormat);
+    m_texture->allocateStorage(QOpenGLTexture::RGB, QOpenGLTexture::UInt8);
+    m_texture->setData(0, 0, QOpenGLTexture::CubeMapPositiveZ, QOpenGLTexture::RGB,
+                       QOpenGLTexture::UInt8, images[0].constBits());
+    m_texture->setData(0, 0, QOpenGLTexture::CubeMapNegativeZ, QOpenGLTexture::RGB,
+                       QOpenGLTexture::UInt8, images[1].constBits());
+    m_texture->setData(0, 0, QOpenGLTexture::CubeMapNegativeX, QOpenGLTexture::RGB,
+                       QOpenGLTexture::UInt8, images[2].constBits());
+    m_texture->setData(0, 0, QOpenGLTexture::CubeMapPositiveX, QOpenGLTexture::RGB,
+                       QOpenGLTexture::UInt8, images[3].constBits());
+    m_texture->setData(0, 0, QOpenGLTexture::CubeMapPositiveY, QOpenGLTexture::RGB,
+                       QOpenGLTexture::UInt8, images[4].constBits());
+    m_texture->setData(0, 0, QOpenGLTexture::CubeMapNegativeY, QOpenGLTexture::RGB,
+                       QOpenGLTexture::UInt8, images[5].constBits());
+
+    m_texture->setMinificationFilter(QOpenGLTexture::Linear);
+    m_texture->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_texture->setWrapMode(QOpenGLTexture::DirectionS, QOpenGLTexture::ClampToEdge);
+    m_texture->setWrapMode(QOpenGLTexture::DirectionT, QOpenGLTexture::ClampToEdge);
 }
 
-void SkyBox::draw(const Camera& camera) {
+void SkyBox::draw(const QMatrix4x4& mvp) {
     m_funcs->glDisable(GL_DEPTH_TEST);
     m_program->removeAllShaders();
     m_program->addShader(m_shader_vert);
@@ -95,23 +114,12 @@ void SkyBox::draw(const Camera& camera) {
         qDebug() << "SkyBox Bind Error " << m_program->log();
     }
 
-    QMatrix4x4 model;
-    // model.translate(camera.get_eye());
-    QMatrix4x4 view;
-    view.lookAt(camera.get_eye(), camera.get_center(), camera.get_up());
-    QMatrix4x4 projection;
-    projection.perspective(90, 1, 0.01, 50);
-
     m_vao->bind();
-    m_program->setUniformValue("MVP", projection * view * model);
-    for (int i = 0; i < 6; i++) {
-        // m_funcs->glActiveTexture(GL_TEXTURE0);
-        m_textures[i]->bind(m_textures[i]->textureId());
-        m_program->setUniformValue("skyBox", m_textures[i]->textureId());
-        m_funcs->glDrawArrays(GL_QUADS, i * 4, 4);
-        m_textures[i]->release();
-    }
+    m_program->setUniformValue("MVP", mvp);
+    m_texture->bind(m_texture->textureId());
+    m_program->setUniformValue("skyBox", m_texture->textureId());
+    m_funcs->glDrawArrays(GL_QUADS, 0, 24);
+    m_texture->release();
     m_program->release();
     m_vao->release();
 }
-

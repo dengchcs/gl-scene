@@ -10,18 +10,18 @@ CONFIG += c++17
 
 SOURCES += \
     camera.cpp \
+    cube.cpp \
     main.cpp \
     mainwidget.cpp \
     renderwidget.cpp \
-    skybox.cpp \
-    static.cpp
+    skybox.cpp
 
 HEADERS += \
     camera.h \
+    cube.h \
     mainwidget.h \
     renderwidget.h \
-    skybox.h \
-    static.h
+    skybox.h
 
 FORMS += \
     form.ui

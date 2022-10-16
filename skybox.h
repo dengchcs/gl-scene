@@ -19,14 +19,14 @@ private:
     void init_shaders();
     void init_textures();
 public:
-    void draw(const Camera& mvp);
+    void draw(const QMatrix4x4& mvp);
 private:
     QOpenGLBuffer *m_vbo;
     QOpenGLVertexArrayObject *m_vao;
     QOpenGLShaderProgram *m_program;
     QOpenGLFunctions *m_funcs;
     QOpenGLShader *m_shader_vert, *m_shader_frag;
-    std::vector<QOpenGLTexture*> m_textures;
+    QOpenGLTexture* m_texture;
 };
 
 #endif // SKYBOX_H

@@ -6,7 +6,7 @@ Camera::Camera()
     , center(0, 0, 0)
 {
     zoom = 1.0;
-    dist_r = 8.0;
+    dist_r = 1.0;
 }
 
 Camera::Camera(const QVector3D& eye, const QVector3D& up, const QVector3D& center, float dist)

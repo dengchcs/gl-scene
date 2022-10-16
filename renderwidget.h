@@ -3,7 +3,7 @@
 
 #include "camera.h"
 #include "skybox.h"
-#include "static.h"
+#include "cube.h"
 
 #include <QElapsedTimer>
 #include <QOpenGLWidget>
@@ -37,7 +37,7 @@ private:
     QElapsedTimer *m_timer;
     QOpenGLShaderProgram *m_shader;
     SkyBox *m_skybox;
-    Static *m_static;
+    std::vector<Cube*> m_static_cubes;
 
     Camera cam;
     int mouse_x, mouse_y;

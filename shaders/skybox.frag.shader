@@ -1,8 +1,8 @@
 #version 330 core
-uniform sampler2D skyBox;
-in vec2 uv;
+uniform samplerCube skyBox;
+in vec3 texCoord;
 out vec4 fragColor;
 
 void main() {
-    fragColor = texture(skyBox, uv);
+    fragColor = texture(skyBox, texCoord);
 }

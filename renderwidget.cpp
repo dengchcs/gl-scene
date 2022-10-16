@@ -4,7 +4,6 @@ RenderWidget::RenderWidget(QWidget *parent)
     : QOpenGLWidget(parent)
     , m_shader(nullptr)
     , m_skybox(nullptr)
-    , m_static(nullptr)
 {
     this->setFocusPolicy(Qt::StrongFocus);
     projection_type = ProjectionType::Perspective;
@@ -17,24 +16,25 @@ RenderWidget::~RenderWidget() {
 }
 
 void RenderWidget::keyPressEvent(QKeyEvent *event) {
+    constexpr float step = 0.01;
     switch(event->key()) {
     case Qt::Key_A:
-        cam.translate_left(0.01);
+        cam.translate_left(step);
         break;
     case Qt::Key_D:
-        cam.translate_left(-0.01);
+        cam.translate_left(-step);
         break;
     case Qt::Key_W:
-        cam.translate_up(0.01);
+        cam.translate_up(step);
         break;
     case Qt::Key_S:
-        cam.translate_up(-0.01);
+        cam.translate_up(-step);
         break;
     case Qt::Key_F:
-        cam.translate_forward(0.01);
+        cam.translate_forward(step);
         break;
     case Qt::Key_B:
-        cam.translate_forward(-0.01);
+        cam.translate_forward(-step);
         break;
     case Qt::Key_Z:
         cam.zoom_near(0.1);
@@ -96,15 +96,29 @@ void RenderWidget::initializeGL() {
     m_shader = new QOpenGLShaderProgram;
 
     m_skybox = new SkyBox(this, m_shader);
-    m_static = new Static(this, m_shader);
+    constexpr int ncube = 4;
+    for (int i = 0; i < ncube; i++) {
+        m_static_cubes.push_back(new Cube(this, m_shader));
+    }
 }
 
 void RenderWidget::paintGL() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_skybox->draw(cam);
-    m_static->draw(cam);
+    QMatrix4x4 model, view, projection;
+    model.translate(cam.get_eye());
+    view = cam.camera_mat();
+    projection.perspective(75, 1.0, 0.1, 10);
+
+    m_skybox->draw(projection * view * model);
+
+    const float trans[] = {-1, -0.5, 0, 0.5};
+    for (std::size_t i = 0; i < m_static_cubes.size(); i++) {
+        QMatrix4x4 cube_model(model);
+        cube_model.translate(trans[i], 0, trans[i]);
+        m_static_cubes[i]->draw(projection * view * cube_model);
+    }
 
     update();
 }

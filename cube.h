@@ -1,5 +1,5 @@
-#ifndef STATIC_H
-#define STATIC_H
+#ifndef CUBE_H
+#define CUBE_H
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
@@ -9,22 +9,22 @@
 #include <QOpenGLVertexArrayObject>
 
 class Camera;
-class Static
+class Cube
 {
 public:
-    Static(QOpenGLFunctions *funcs, QOpenGLShaderProgram *program);
+    Cube(QOpenGLFunctions *funcs, QOpenGLShaderProgram *program);
 public:
     void init_buffer();
     void init_shaders();
     void init_textures();
-    void draw(const Camera& cam);
+    void draw(const QMatrix4x4& mvp);
 private:
     QOpenGLBuffer *m_vbo;
     QOpenGLVertexArrayObject *m_vao;
     QOpenGLShaderProgram *m_program;
     QOpenGLFunctions *m_funcs;
     QOpenGLShader *m_shader_vert, *m_shader_frag;
-    QOpenGLTexture *m_texture_face;
+    QOpenGLTexture *m_texture_face, *m_texture_box;
 };
 
-#endif // STATIC_H
+#endif // CUBE_H
