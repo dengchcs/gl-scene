@@ -3,7 +3,7 @@
 Camera::Camera()
     : eye(0, 0, 1)
     , up(0, 1, 0)
-    , center(0, 0, 0.8)
+    , center(0, 0, 0)
 {
     zoom = 1.0;
     dist_r = 1.0;

@@ -9,6 +9,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLBuffer>
+#include <QOpenGLFramebufferObject>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 #include <QOpenGLVertexArrayObject>
@@ -36,13 +37,18 @@ protected:
 private:
     void move();
 private:
+    QOpenGLBuffer *m_vbo{nullptr};
+    QOpenGLVertexArrayObject *m_vao{nullptr};
     QElapsedTimer *m_timer{nullptr};
-    QOpenGLShaderProgram *m_shader{nullptr};
+    QOpenGLShader *m_vert_shader{nullptr}, *m_frag_shader{nullptr};
+    QOpenGLShaderProgram *m_program{nullptr};
     SkyBox *m_skybox{nullptr};
     std::vector<Cube*> m_static_cubes;
-    Cube* m_moving_cube{nullptr};
+    Cube *m_moving_cube{nullptr};
     QVector3D m_direction{1, 0, 0};
     QVector3D m_diff{0, 0, 0};
+
+    GLuint m_fbo, m_rbo, m_texture;
 
     Camera cam;
     int mouse_x, mouse_y;

@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>images/awesomeface.jpg</file>
         <file>images/container.jpg</file>
         <file>images/front.jpg</file>
         <file>images/back.jpg</file>
@@ -9,8 +10,9 @@
         <file>images/right.jpg</file>
         <file>shaders/skybox.vert.shader</file>
         <file>shaders/skybox.frag.shader</file>
-        <file>images/awesomeface.jpg</file>
         <file>shaders/cube.vert.shader</file>
         <file>shaders/cube.frag.shader</file>
+        <file>shaders/screen.vert.shader</file>
+        <file>shaders/screen.frag.shader</file>
     </qresource>
 </RCC>

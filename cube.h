@@ -8,7 +8,6 @@
 #include <QOpenGLTexture>
 #include <QOpenGLVertexArrayObject>
 
-class Camera;
 class Cube
 {
 public:
