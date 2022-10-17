@@ -37,6 +37,11 @@ protected:
 private:
     void move();
 private:
+    void init_buffers();
+    void init_shaders();
+    void init_texture();
+    void init_fbo();
+private:
     QOpenGLBuffer *m_vbo{nullptr};
     QOpenGLVertexArrayObject *m_vao{nullptr};
     QElapsedTimer *m_timer{nullptr};

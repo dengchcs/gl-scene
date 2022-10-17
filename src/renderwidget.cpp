@@ -1,4 +1,6 @@
 #include "renderwidget.h"
+#include <QFile>
+#include <QFileDialog>
 
 RenderWidget::RenderWidget(QWidget *parent)
     : QOpenGLWidget(parent)
@@ -9,6 +11,57 @@ RenderWidget::RenderWidget(QWidget *parent)
     projection_type = ProjectionType::Perspective;
     m_timer = new QElapsedTimer;
     m_timer->start();
+}
+
+void RenderWidget::init_buffers() {
+    m_vao = new QOpenGLVertexArrayObject;
+    m_vbo = new QOpenGLBuffer(QOpenGLBuffer::Type::VertexBuffer);
+    m_vao->create();
+    m_vao->bind();
+    m_vbo->create();
+    m_vbo->bind();
+    const GLfloat vertices[] = {
+        -1, -1, 0, 0,
+        +1, -1, 1, 0,
+        +1, +1, 1, 1,
+        -1, +1, 0, 1
+    };
+    m_vbo->allocate(vertices, 4 * 4 * sizeof(GLfloat));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void *)(2 * sizeof(GLfloat)));
+    m_vbo->release();
+    m_vao->release();
+}
+
+void RenderWidget::init_shaders() {
+    m_vert_shader = new QOpenGLShader(QOpenGLShader::Vertex);
+    m_frag_shader = new QOpenGLShader(QOpenGLShader::Fragment);
+    m_vert_shader->compileSourceFile(":/shaders/screen.vert.shader");
+    m_frag_shader->compileSourceFile(":/shaders/screen.frag.shader");
+}
+
+void RenderWidget::init_texture() {
+    glGenTextures(1, &m_texture);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void RenderWidget::init_fbo() {
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0);
+
+    glGenRenderbuffers(1, &m_rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width(), height());
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+           qDebug() << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 RenderWidget::~RenderWidget() {
@@ -93,55 +146,49 @@ void RenderWidget::initializeGL() {
     initializeOpenGLFunctions();
     glEnable(GL_DEPTH_TEST);
 
-    m_vao = new QOpenGLVertexArrayObject;
-    m_vbo = new QOpenGLBuffer(QOpenGLBuffer::Type::VertexBuffer);
-    m_vao->create();
-    m_vao->bind();
-    m_vbo->create();
-    m_vbo->bind();
-    const GLfloat vertices[] = {
-        -1, -1, 0, 0,
-        +1, -1, 1, 0,
-        +1, +1, 1, 1,
-        -1, +1, 0, 1
-    };
-    m_vbo->allocate(vertices, 4 * 4 * sizeof(GLfloat));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void *)(2 * sizeof(GLfloat)));
-    m_vbo->release();
-    m_vao->release();
-
-    m_vert_shader = new QOpenGLShader(QOpenGLShader::Vertex);
-    m_frag_shader = new QOpenGLShader(QOpenGLShader::Fragment);
-    m_vert_shader->compileSourceFile(":/shaders/screen.vert.shader");
-    m_frag_shader->compileSourceFile(":/shaders/screen.frag.shader");
-
     m_program = new QOpenGLShaderProgram;
+    init_buffers();
+    init_shaders();
+    init_texture();
+    init_fbo();
 
     m_skybox = new SkyBox(this, m_program);
-    m_static_cubes.push_back(new Cube(this, m_program, {-0.9, -0.9, -0.9}, 0.2));
-    m_static_cubes.push_back(new Cube(this, m_program, {+0.9, -0.9, -0.9}, 0.2));
-    m_moving_cube = new Cube(this, m_program, {0.0, -0.95, -0.9}, 0.1);
 
-    glGenTextures(1, &m_texture);
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    auto parse_cube = [&](const QString& str) {
+        auto nums = str.split(",");
+        Q_ASSERT(nums.size() == 4);
+        float x = nums[0].toFloat(), y = nums[1].toFloat(), z = nums[2].toFloat(), len = nums[3].toFloat();
+        return new Cube(this, m_program, {x, y, z}, len);
+    };
+    auto parse_direction = [&](const QString& str) {
+        auto nums = str.split(",");
+        Q_ASSERT(nums.size() == 3);
+        float x = nums[0].toFloat(), y = nums[1].toFloat(), z = nums[2].toFloat();
+        return QVector3D{x, y, z};
+    };
 
-    glGenFramebuffers(1, &m_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0);
-
-    glGenRenderbuffers(1, &m_rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width(), height());
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-           qDebug() << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    QString file_name = QFileDialog::getOpenFileName(this, tr("Select Scene Config"), ".", tr("Config Files (*.config)"));
+    QFile file(file_name);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    QTextStream in(&file);
+    while (! in.atEnd()) {
+        QString line = in.readLine();
+        if (line.startsWith("#")) continue;
+        if (line.startsWith("STATIC")) {
+            const int nstatic = line.last(1).toInt();
+            for (int i = 0; i < nstatic; i++) {
+                line = in.readLine();
+                auto cube = parse_cube(line);
+                m_static_cubes.push_back(cube);
+            }
+        }
+        if (line == "MOVING") {
+            line = in.readLine();
+            m_moving_cube = parse_cube(line);
+            line = in.readLine();
+            m_direction = parse_direction(line);
+        }
+    }
 }
 
 void RenderWidget::paintGL() {
