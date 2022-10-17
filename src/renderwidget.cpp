@@ -275,9 +275,9 @@ bool RenderWidget::move() {
     }
 
     if (collision) {
-        const float xrand = QRandomGenerator::global()->bounded(0.01);
-        const float yrand = QRandomGenerator::global()->bounded(0.01);
-        const float zrand = QRandomGenerator::global()->bounded(0.01);
+        const float xrand = QRandomGenerator::global()->bounded(0, 10) / 20.0 - 0.25;
+        const float yrand = QRandomGenerator::global()->bounded(0, 10) / 20.0 - 0.25;
+        const float zrand = QRandomGenerator::global()->bounded(0, 10) / 20.0 - 0.25;
         m_direction += QVector3D{xrand, yrand, zrand};
     }
 
