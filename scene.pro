@@ -12,19 +12,16 @@ SOURCES += \
     src/camera.cpp \
     src/cube.cpp \
     src/main.cpp \
-    src/mainwidget.cpp \
     src/renderwidget.cpp \
     src/skybox.cpp
 
 HEADERS += \
     src/camera.h \
     src/cube.h \
-    src/mainwidget.h \
     src/renderwidget.h \
     src/skybox.h
 
-FORMS += \
-    src/form.ui
+FORMS +=
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

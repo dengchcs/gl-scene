@@ -1,16 +1,18 @@
 #include "renderwidget.h"
 #include <QFile>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QRandomGenerator>
 
 RenderWidget::RenderWidget(QWidget *parent)
     : QOpenGLWidget(parent)
-    , m_program(nullptr)
-    , m_skybox(nullptr)
 {
     this->setFocusPolicy(Qt::StrongFocus);
-    projection_type = ProjectionType::Perspective;
+    this->setGeometry({100, 100, 800, 800});
     m_timer = new QElapsedTimer;
     m_timer->start();
+    const QString title{"A:左移, D:右移, W:上移, S:下移, F:前进, B:后退, Z:放大, X:缩小;   旋转:按住鼠标并移动"};
+    this->setWindowTitle(title);
 }
 
 void RenderWidget::init_buffers() {
@@ -72,38 +74,28 @@ void RenderWidget::keyPressEvent(QKeyEvent *event) {
     constexpr float step = 0.01;
     switch(event->key()) {
     case Qt::Key_A:
-        cam.translate_left(step);
+        m_cam.translate_left(step);
         break;
     case Qt::Key_D:
-        cam.translate_left(-step);
+        m_cam.translate_left(-step);
         break;
     case Qt::Key_W:
-        cam.translate_up(step);
+        m_cam.translate_up(step);
         break;
     case Qt::Key_S:
-        cam.translate_up(-step);
+        m_cam.translate_up(-step);
         break;
     case Qt::Key_F:
-        cam.translate_forward(step);
+        m_cam.translate_forward(step);
         break;
     case Qt::Key_B:
-        cam.translate_forward(-step);
+        m_cam.translate_forward(-step);
         break;
     case Qt::Key_Z:
-        cam.zoom_near(0.1);
+        m_cam.zoom_near(0.1);
         break;
     case Qt::Key_X:
-        cam.zoom_near(-0.1);
-        break;
-    case Qt::Key_Space:
-        if (projection_type == ProjectionType::Perspective) {
-            projection_type = ProjectionType::Ortho;
-        } else {
-            projection_type = ProjectionType::Perspective;
-        }
-        break;
-    case Qt::Key_Enter:
-        cam = {{0, 0, 1}, {0, 1, 0}, {0, 0, 0}};
+        m_cam.zoom_near(-0.1);
         break;
     }
     update();
@@ -118,18 +110,18 @@ void RenderWidget::mouseMoveEvent(QMouseEvent *event) {
     if (std::abs(xdiff - ydiff) <= 3) return;
     if (xdiff > ydiff && xdiff >= 3) {
         if (xnew > mouse_x) {
-            cam.rotate_left(degree);
+            m_cam.rotate_left(degree);
         } else {
-            cam.rotate_left(-degree);
+            m_cam.rotate_left(-degree);
         }
         mouse_x = xnew;
     }
 
     if (ydiff > xdiff && ydiff >= 3) {
         if (ynew > mouse_y) {
-            cam.rotate_up(-degree);
+            m_cam.rotate_up(-degree);
         } else {
-            cam.rotate_up(degree);
+            m_cam.rotate_up(degree);
         }
         mouse_y = ynew;
     }
@@ -197,21 +189,34 @@ void RenderWidget::paintGL() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    QMatrix4x4 model, view, projection;
-    model.translate(cam.get_eye());
-    view = cam.camera_mat();
-    projection.perspective(90, 1.0, 0.1, 10);
-    m_skybox->draw(projection * view * model);
+    QMatrix4x4 view, projection;
+    view = m_cam.camera_mat();
+    projection.perspective(90, m_aspect_ratio, 0.1, 10);
+    const QMatrix4x4 vp = projection * view;    // 这两个矩阵是共用的
 
+    QMatrix4x4 static_model;
+    // static_model.translate(cam.get_eye());   // 取消注释后相机无法移动
+    m_skybox->draw(vp * static_model);
     for (std::size_t i = 0; i < m_static_cubes.size(); i++) {
-        m_static_cubes[i]->draw(projection * view * model);
+        m_static_cubes[i]->draw(vp * static_model);
     }
-    move();
-    QMatrix4x4 mv_model;
-    mv_model.translate(cam.get_eye());
-    mv_model.translate(m_diff);
-    m_moving_cube->draw(projection * view * mv_model);
 
+    const auto collision = move();
+    QMatrix4x4 mv_model;
+    // mv_model.translate(cam.get_eye());
+    mv_model.translate(m_diff);
+    mv_model.translate(m_moving_cube->get_center());        // 下面三步是为了给动态物体制造自转的效果
+    mv_model.rotate(m_timer->elapsed() / 10.0, {0, 1, 0});
+    mv_model.translate(-m_moving_cube->get_center());
+    m_moving_cube->draw(vp * mv_model);
+    if (collision) {
+        QMessageBox msg(this);
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setText(m_collision_info);
+        msg.exec();
+    }
+
+    // 将帧缓冲的数据写到屏幕上, 达到滤镜的效果
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -238,19 +243,47 @@ void RenderWidget::paintGL() {
 
 void RenderWidget::resizeGL(int w, int h) {
    glViewport(0, 0, w, h);
+   m_aspect_ratio = w / (h + 0.0);
 }
 
-void RenderWidget::move() {
-    const float xmin = m_static_cubes[0]->xmax(), xmax = m_static_cubes[1]->xmin();
-    const auto current = m_moving_cube->get_center() + m_diff;
-    if (current.x() - m_moving_cube->get_len() / 2.0 <= xmin) {
-        m_direction = {1, 0, 0};
-    }
-    if (current.x() + m_moving_cube->get_len() / 2.0 >= xmax) {
-        m_direction = {-1, 0, 0};
-    }
-    const float velocity = (std::abs(current.x()) + 0.02) * 0.1;
+bool RenderWidget::move() {
+    auto calc_velocity = [](const QVector3D& location) {
+        float velocity = location.lengthSquared();
+        return (velocity + 0.1) * 0.01;
+    };
 
+    auto cube_collision = [this](const Cube* moving, const Cube* cube2) {
+        const float dist = (moving->get_center() + m_diff - cube2->get_center()).length();
+        return dist <= (moving->get_len() + cube2 ->get_len()) / 1.5;
+    };
+    bool collision = false;
+    const auto current = m_moving_cube->get_center() + m_diff;
+    const float lhalf = m_moving_cube->get_len() / 2.0;
+    for (int i = 0; i < 3; i++) {
+        if (current[i] + lhalf >= 1.05 || current[i] - lhalf <= -1.05) {
+            m_direction[i] = -m_direction[i];
+            collision = true;
+            m_collision_info = "物体到达边界位置";
+        }
+    }
+    for (std::size_t i = 0; i < m_static_cubes.size(); i++) {
+        if (cube_collision(m_moving_cube, m_static_cubes[i])) {
+            m_direction = -m_direction;
+            collision = true;
+            m_collision_info = "物体和第" + QString::number(i + 1) + "个立方体发送碰撞";
+        }
+    }
+
+    if (collision) {
+        const float xrand = QRandomGenerator::global()->bounded(0.01);
+        const float yrand = QRandomGenerator::global()->bounded(0.01);
+        const float zrand = QRandomGenerator::global()->bounded(0.01);
+        m_direction += QVector3D{xrand, yrand, zrand};
+    }
+
+    const float velocity = calc_velocity(current);
     const auto step = m_direction * velocity;
     m_diff += step;
+
+    return collision;
 }
