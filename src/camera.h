@@ -8,6 +8,7 @@ class Camera
 {
     QVector3D eye, up, center;  // 相机位置、上方向和观察点
     float dist_r, zoom;
+    bool limited = true;
 public:
     Camera();
     Camera(const QVector3D& eye, const QVector3D& up, const QVector3D& center, float dist = 1.0);
@@ -15,6 +16,7 @@ public:
     [[nodiscard]] QVector3D get_eye() const { return eye; }
     [[nodiscard]] QVector3D get_center() const { return center; }
     [[nodiscard]] QVector3D get_up() const { return up; }
+    void set_limited(bool do_limit) { limited = do_limit; }
 private:
     /**
      * @brief 用于判断相机是否脱离了天空盒内部

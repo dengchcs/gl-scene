@@ -11,6 +11,7 @@ RenderWidget::RenderWidget(QWidget *parent)
     this->setGeometry({100, 100, 800, 800});
     m_timer = new QElapsedTimer;
     m_timer->start();
+    m_cam.set_limited(true);
     const QString title{"A:左移, D:右移, W:上移, S:下移, F:前进, B:后退, Z:放大, X:缩小;   旋转:按住鼠标并移动"};
     this->setWindowTitle(title);
 }
@@ -195,7 +196,7 @@ void RenderWidget::paintGL() {
     const QMatrix4x4 vp = projection * view;    // 这两个矩阵是共用的
 
     QMatrix4x4 static_model;
-    // static_model.translate(cam.get_eye());   // 取消注释后相机无法移动
+    // static_model.translate(m_cam.get_eye());   // 取消注释后相机无法移动
     m_skybox->draw(vp * static_model);
     for (std::size_t i = 0; i < m_static_cubes.size(); i++) {
         m_static_cubes[i]->draw(vp * static_model);
@@ -203,7 +204,7 @@ void RenderWidget::paintGL() {
 
     const auto collision = move();
     QMatrix4x4 mv_model;
-    // mv_model.translate(cam.get_eye());
+    // mv_model.translate(m_cam.get_eye());
     mv_model.translate(m_diff);
     mv_model.translate(m_moving_cube->get_center());        // 下面三步是为了给动态物体制造自转的效果
     mv_model.rotate(m_timer->elapsed() / 10.0, {0, 1, 0});
