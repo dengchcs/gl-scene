@@ -210,6 +210,7 @@ void RenderWidget::paintGL() {
     mv_model.translate(-m_moving_cube->get_center());
     m_moving_cube->draw(vp * mv_model);
     if (collision) {
+        m_timer->restart();
         QMessageBox msg(this);
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setText(m_collision_info);
@@ -230,6 +231,9 @@ void RenderWidget::paintGL() {
     if (!m_program->bind()) {
         qDebug() << "Screen Shader Error";
     }
+    float seconds = m_timer->elapsed() / 1000.0;
+    float kernelCenter = seconds / (seconds + 1);
+    m_program->setUniformValue("kernelCenter", kernelCenter);
     m_vao->bind();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_texture);
@@ -248,8 +252,8 @@ void RenderWidget::resizeGL(int w, int h) {
 
 bool RenderWidget::move() {
     auto calc_velocity = [](const QVector3D& location) {
-        float velocity = location.lengthSquared();
-        return (velocity + 0.1) * 0.01;
+        float velocity = 0.01 / (location.lengthSquared() + 0.1);
+        return velocity;
     };
 
     auto cube_collision = [this](const Cube* moving, const Cube* cube2) {
@@ -259,11 +263,14 @@ bool RenderWidget::move() {
     bool collision = false;
     const auto current = m_moving_cube->get_center() + m_diff;
     const float lhalf = m_moving_cube->get_len() / 2.0;
+    const QString border[] = {"左", "右", "下", "上", "前", "后"};
     for (int i = 0; i < 3; i++) {
-        if (current[i] + lhalf >= 1.05 || current[i] - lhalf <= -1.05) {
+        bool out1 = current[i] - lhalf <= -1.05 && m_direction[i] < 0;
+        bool out2 = current[i] + lhalf >= 1.05 && m_direction[i] > 0;
+        if (out1 || out2) {
             m_direction[i] = -m_direction[i];
             collision = true;
-            m_collision_info = "物体到达边界位置";
+            m_collision_info = "物体到达" + border[i * 2 + out2] + "边界";
         }
     }
     for (std::size_t i = 0; i < m_static_cubes.size(); i++) {
@@ -273,14 +280,14 @@ bool RenderWidget::move() {
             m_collision_info = "物体和第" + QString::number(i + 1) + "个立方体发送碰撞";
         }
     }
-
+/*
     if (collision) {
-        const float xrand = QRandomGenerator::global()->bounded(0, 10) / 20.0 - 0.25;
-        const float yrand = QRandomGenerator::global()->bounded(0, 10) / 20.0 - 0.25;
-        const float zrand = QRandomGenerator::global()->bounded(0, 10) / 20.0 - 0.25;
+        const float xrand = QRandomGenerator::global()->bounded(0, 10) / 50.0 - 0.1;
+        const float yrand = QRandomGenerator::global()->bounded(0, 10) / 50.0 - 0.1;
+        const float zrand = QRandomGenerator::global()->bounded(0, 10) / 50.0 - 0.1;
         m_direction += QVector3D{xrand, yrand, zrand};
     }
-
+*/
     const float velocity = calc_velocity(current);
     const auto step = m_direction * velocity;
     m_diff += step;

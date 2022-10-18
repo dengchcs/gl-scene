@@ -2,6 +2,7 @@
 in vec2 uv;
 out vec4 fragColor;
 uniform sampler2D textureScreen;
+uniform float kernelCenter;
 const float offset = 1.0 / 300.0;
 void main()
 {
@@ -16,11 +17,11 @@ void main()
         vec2( 0.0f,   -offset), // 正下
         vec2( offset, -offset)  // 右下
     );
-
+    float corner = (1 - kernelCenter) / 12.0;
     float kernel[9] = float[](
-        -1, -1, -1,
-        -1,  9, -1,
-        -1, -1, -1
+        corner, 2 * corner, corner,
+        2 * corner, kernelCenter, 2 * corner,
+        corner, 2 * corner, corner
     );
 
     vec3 sampleTex[9];
